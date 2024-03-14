@@ -1,12 +1,20 @@
 import * as React from 'react';
 
-import { useComponentsContext, type Node, type GetPropsFromNode } from './BlocksRenderer';
 import { Text } from './Text';
+
+import type {
+  Node,
+  GetPropsFromNode,
+  BlocksComponents,
+  ModifiersComponents,
+} from './BlocksRenderer';
 
 type BlockComponentProps = GetPropsFromNode<Node>;
 
 interface BlockProps {
   content: Node;
+  blocks: BlocksComponents;
+  modifiers: ModifiersComponents;
 }
 
 const voidTypes = ['image'];
@@ -42,27 +50,23 @@ const augmentProps = (content: Node) => {
   return props;
 };
 
-const Block = ({ content }: BlockProps) => {
-  const { children: childrenNodes, type, ...props } = content;
+const Block = (props: BlockProps) => {
+  const { content, blocks, modifiers } = props;
 
-  // Get matching React component from the context
-  const { blocks, missingBlockTypes } = useComponentsContext();
+  const { children: childrenNodes, type, ...nodeProps } = content;
+
+  // Get matching React component from the props
   const BlockComponent = blocks[type] as React.ComponentType<BlockComponentProps> | undefined;
 
   if (!BlockComponent) {
-    // Only warn once per missing block
-    if (!missingBlockTypes.includes(type)) {
-      console.warn(`[@strapi/block-react-renderer] No component found for block type "${type}"`);
-      missingBlockTypes.push(type);
-    }
-
+    console.warn(`[@strapi/block-react-renderer] No component found for block type "${type}"`);
     // Don't throw an error, just ignore the block
     return null;
   }
 
   // Handle void types separately as they should not render children
   if (voidTypes.includes(type)) {
-    return <BlockComponent {...props} />;
+    return <BlockComponent {...nodeProps} />;
   }
 
   // Handle empty paragraphs separately as they should render a <br> tag
@@ -84,11 +88,11 @@ const Block = ({ content }: BlockProps) => {
           const { type: _type, ...childNodeProps } = childNode;
 
           // TODO use node as key with WeakMap
-          return <Text {...childNodeProps} key={index} />;
+          return <Text {...childNodeProps} modifierComponents={modifiers} key={index} />;
         }
 
         // TODO use node as key with WeakMap
-        return <Block content={childNode} key={index} />;
+        return <Block {...props} content={childNode} key={index} />;
       })}
     </BlockComponent>
   );

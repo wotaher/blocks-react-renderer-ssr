@@ -1,9 +1,8 @@
-'use client';
-
 import * as React from 'react';
 
 import { Block } from './Block';
-import { type Modifier, type TextInlineNode } from './Text';
+
+import type { Modifier, TextInlineNode } from './Text';
 
 /* -------------------------------------------------------------------------------------------------
  * TypeScript types and utils
@@ -92,7 +91,7 @@ type GetPropsFromNode<T> = Omit<T, 'type' | 'children'> & {
 };
 
 // Map of all block types to their matching React component
-type BlocksComponents = {
+export type BlocksComponents = {
   [K in Node['type']]: React.ComponentType<
     // Find the BlockProps in the union that match the type key of the current BlockNode
     // and use it as the component props
@@ -101,7 +100,7 @@ type BlocksComponents = {
 };
 
 // Map of all inline types to their matching React component
-type ModifiersComponents = {
+export type ModifiersComponents = {
   [K in Modifier]: React.ComponentType<{ children: React.ReactNode }>;
 };
 
@@ -109,14 +108,12 @@ type ModifiersComponents = {
  * Default blocks and modifiers components
  * -----------------------------------------------------------------------------------------------*/
 
-interface ComponentsContextValue {
+interface DefaultComponents {
   blocks: BlocksComponents;
   modifiers: ModifiersComponents;
-  missingBlockTypes: string[];
-  missingModifierTypes: string[];
 }
 
-const defaultComponents: ComponentsContextValue = {
+const defaultComponents: DefaultComponents = {
   blocks: {
     paragraph: (props) => <p>{props.children}</p>,
     quote: (props) => <blockquote>{props.children}</blockquote>,
@@ -159,31 +156,7 @@ const defaultComponents: ComponentsContextValue = {
     strikethrough: (props) => <del>{props.children}</del>,
     code: (props) => <code>{props.children}</code>,
   },
-  missingBlockTypes: [],
-  missingModifierTypes: [],
 };
-
-/* -------------------------------------------------------------------------------------------------
- * Context to pass blocks and inline components to the nested components
- * -----------------------------------------------------------------------------------------------*/
-
-const ComponentsContext = React.createContext<ComponentsContextValue>(defaultComponents);
-
-interface ComponentsProviderProps {
-  children: React.ReactNode;
-  value?: ComponentsContextValue;
-}
-
-// Provide default value so we don't need to import defaultComponents in all tests
-const ComponentsProvider = ({ children, value = defaultComponents }: ComponentsProviderProps) => {
-  const memoizedValue = React.useMemo(() => value, [value]);
-
-  return <ComponentsContext.Provider value={memoizedValue}>{children}</ComponentsContext.Provider>;
-};
-
-function useComponentsContext() {
-  return React.useContext(ComponentsContext);
-}
 
 /* -------------------------------------------------------------------------------------------------
  * BlocksRenderer
@@ -208,24 +181,13 @@ const BlocksRenderer = (props: BlocksRendererProps) => {
     ...props.modifiers,
   };
 
-  // Use refs because we can mutate them and avoid triggering re-renders
-  const missingBlockTypes = React.useRef<string[]>([]);
-  const missingModifierTypes = React.useRef<string[]>([]);
-
   return (
-    <ComponentsProvider
-      value={{
-        blocks,
-        modifiers,
-        missingBlockTypes: missingBlockTypes.current,
-        missingModifierTypes: missingModifierTypes.current,
-      }}
-    >
+    <div>
       {/* TODO use WeakMap instead of index as the key */}
       {props.content.map((content, index) => (
-        <Block content={content} key={index} />
+        <Block content={content} key={index} blocks={blocks} modifiers={modifiers} />
       ))}
-    </ComponentsProvider>
+    </div>
   );
 };
 
@@ -234,4 +196,4 @@ const BlocksRenderer = (props: BlocksRendererProps) => {
  * -----------------------------------------------------------------------------------------------*/
 
 export type { RootNode, Node, GetPropsFromNode };
-export { ComponentsProvider, useComponentsContext, BlocksRenderer };
+export { BlocksRenderer };

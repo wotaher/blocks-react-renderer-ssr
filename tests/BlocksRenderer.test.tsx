@@ -275,7 +275,10 @@ describe('BlocksRenderer', () => {
       );
 
       expect(screen.queryByText('Should not appear')).not.toBeInTheDocument();
-      expect(console.warn).toHaveBeenCalledTimes(2);
+      expect(console.warn).toHaveBeenCalledTimes(3);
+      expect(console.warn).toHaveBeenCalledWith(
+        '[@strapi/block-react-renderer] No component found for block type "unknown"'
+      );
       expect(console.warn).toHaveBeenCalledWith(
         '[@strapi/block-react-renderer] No component found for block type "unknown"'
       );
@@ -403,7 +406,7 @@ describe('BlocksRenderer', () => {
       );
 
       expect(screen.getByText(/my paragraph/i)).toBeInTheDocument();
-      expect(console.warn).toHaveBeenCalledTimes(2);
+      expect(console.warn).toHaveBeenCalledTimes(4);
       expect(console.warn).toHaveBeenCalledWith(
         '[@strapi/block-react-renderer] No component found for modifier "unknown"'
       );
